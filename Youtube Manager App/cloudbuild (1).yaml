@@ -1,0 +1,27 @@
+steps:
+
+  # Validate Request number input
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'validate-request-number'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        if [ -z "$_REQUEST_NO" ]; then
+          echo "❌ ERROR: _REQUEST_NO is required but was not provided, please provide it and Retry."
+          exit 1
+        fi
+        echo "✅ _REQUEST_NO provided: $_REQUEST_NO"
+        
+  - name: gcr.io/cloud-builders/gcloud
+    entrypoint: python3
+    args: ["IE/DataFusion/migrate.py", "${_DB_NAME}", "${_DB_USER}","${_DB_PASSWORD}","${_NS}","${_PORT}"]
+
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        chmod +x ./IE/DataFusion/sox.sh && \
+        ./IE/DataFusion/sox.sh "$PROJECT_ID" $BUILD_ID  $COMMIT_SHA  $_IMAGE_NO  $_REQUEST_NO
+logsBucket: ${_LOGS_BUCKET}
